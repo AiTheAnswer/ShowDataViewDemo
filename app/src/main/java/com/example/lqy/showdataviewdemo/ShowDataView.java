@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,7 +72,9 @@ public class ShowDataView extends View {
     float mLength;
     
     boolean mLess12 = false;
-    
+
+    DecimalFormat mDf = new DecimalFormat("0.00");
+
     public ShowDataView(Context context) {
         this(context, null);
     }
@@ -108,11 +111,11 @@ public class ShowDataView extends View {
         mPaint.setColor(mHeightBackColor);
         canvas.drawRect(0, mAreaHeight, mWidth, mAreaHeight + mSpaceHeight, mPaint);
         canvas.drawRect(0, mAreaHeight * 2 + mSpaceHeight, mWidth, mHeight, mPaint);
-        int listSize = mMileList.size();
-        
-        if (mMileList.size() == 0) {
+
+        if (mMileList == null || mMileList.size() == 0) {
             // TODO: 16/2/18 no data
         } else {
+            int listSize = mMileList.size();
             if (mMileList.size() < 13) {
                 mLess12 = true;
                 mSpaceLength = (mWidth - mDataLength * listSize) / (listSize + 1);
@@ -151,7 +154,10 @@ public class ShowDataView extends View {
                 }
                 x = xx;
                 y = yy;
-                canvas.drawText(mSpeedList.get(mLeftPosition + i) + "", xx, yy - mAreaHeight / 48 * 3, mPaint);
+                canvas.drawText(mDf.format(mSpeedList.get(mLeftPosition + i)), xx, yy - mAreaHeight / 48 * 3, mPaint);
+                if(i == listSize - 1){
+                    canvas.drawText("速度(m/s)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
+                }
             }
             
             x = 0;
@@ -174,6 +180,9 @@ public class ShowDataView extends View {
                 x = xx;
                 y = yy;
                 canvas.drawText(mHeartList.get(mLeftPosition + i) + "", xx, yy - mAreaHeight / 48 * 3, mPaint);
+                if(i == listSize - 1){
+                    canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
+                }
             }
             
             mPaint.setColor(mLineCircleColor);
@@ -195,7 +204,7 @@ public class ShowDataView extends View {
             }
             mPaint.setColor(mMileTextColor);
             for (int i = 0; i < listSize; ++i) {
-                canvas.drawText(mMileList.get(mLeftPosition + i) + " km", mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 * 7 + mSpaceHeight + (1 - mMileList.get(mLeftPosition + i) / maxMile) * mAreaHeight / 6 * 5 - mAreaHeight / 24, mPaint);
+                canvas.drawText(mDf.format(mMileList.get(mLeftPosition + i)) + " km", mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 * 7 + mSpaceHeight + (1 - mMileList.get(mLeftPosition + i) / maxMile) * mAreaHeight / 6 * 5 - mAreaHeight / 24, mPaint);
             }
             //draw text
             mPaint.setColor(mTimeColor);
@@ -204,7 +213,7 @@ public class ShowDataView extends View {
             }
             mPaint.setColor(mDateColor);
             for (int i = 0; i < listSize; ++i) {
-                canvas.drawText(mDateList.get(mLeftPosition + i) + "", mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight * 2 + mSpaceHeight + mTextHeight * 0.8f, mPaint);
+                canvas.drawText(mDateList.get(mLeftPosition + i), mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight * 2 + mSpaceHeight + mTextHeight * 0.8f, mPaint);
             }
             
         }
@@ -257,8 +266,8 @@ public class ShowDataView extends View {
                     } else if (mX - event.getX() > 0) {
                         distance = (int) Math.abs(event.getX() - mX);
                         mScreenPosition += distance;
-                        if(mScreenPosition > mWidth - mScreenWidth){
-                            mScreenPosition = mWidth - mScreenWidth;
+                        if (mScreenPosition > (mDataLength + mSpaceLength) * 2) {
+                            mScreenPosition = (mDataLength + mSpaceLength) * 2;
                         }
                         this.scrollTo((int) mScreenPosition, 0);
                     }
@@ -269,8 +278,8 @@ public class ShowDataView extends View {
                         if (mLength > mSpaceLength) {
                             if(mLeftPosition != 0) {
                                 mLength = mSpaceLength - mLength;
-                            }else{
-                                mLength = mSpaceLength;
+                            } else {
+                                mLength = (mSpaceLength*2 + mDataLength);
                             }
                             if (mLeftPosition > 0) {
                                 --mLeftPosition;
@@ -283,8 +292,8 @@ public class ShowDataView extends View {
                         if (mLength < -mDataLength) {
                             if(mLeftPosition != mMaxLeftPosition) {
                                 mLength = -mDataLength - mLength;
-                            }else{
-                                mLength = -mDataLength;
+                            } else {
+                                mLength = -(mSpaceLength + mDataLength) *3;
                             }
                             if (mLeftPosition < mMaxLeftPosition) {
                                 ++mLeftPosition;
