@@ -9,6 +9,9 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -26,6 +29,22 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        ShowDataView view = (ShowDataView) findViewById(R.id.sdv);
+        // test data
+        ArrayList<Float> mileList = new ArrayList<>();
+        ArrayList<Float> heartList = new ArrayList<>();
+        ArrayList<Float> speedList = new ArrayList<>();
+        ArrayList<Integer> timeList = new ArrayList<>();
+        ArrayList<String> dateList = new ArrayList<>();
+        for (int i = 0; i < 30; ++i) {
+            mileList.add((float) (Math.random() * 200));
+            heartList.add((float) (Math.random() * 150));
+            speedList.add((float) (Math.random() * 20));
+            timeList.add(i);
+            dateList.add(i + "");
+        }
+        view.setDataLists(mileList, heartList, speedList, timeList, dateList);
     }
 
     @Override
