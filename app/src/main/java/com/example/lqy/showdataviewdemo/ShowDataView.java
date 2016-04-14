@@ -13,6 +13,7 @@ import android.view.View;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -21,12 +22,21 @@ import java.util.List;
 public class ShowDataView extends View {
 
     public static final float RIGHT_ANGLE = 90f * 3.1415f / 180f;
+    /**
+     * 重要参数，两点之间分为几段描画，数字愈大分段越多，描画的曲线就越精细.
+     */
+    private static final int STEPS = 12;
 
-    private final List<Float> mMileList = new ArrayList<Float>();
-    private final List<Float> mHeartList = new ArrayList<Float>();
-    private final List<Float> mSpeedList = new ArrayList<Float>();
-    private final List<Integer> mTimeList = new ArrayList<Integer>();
-    private final List<String> mDateList = new ArrayList<String>();
+    private final List<Float> mMileList = new ArrayList<>();
+    private final List<Float> mHeartList = new ArrayList<>();
+    private final List<Float> mSpeedList = new ArrayList<>();
+    private final List<Integer> mTimeList = new ArrayList<>();
+    private final List<String> mDateList = new ArrayList<>();
+
+    List<Cubic> mCubicsX = new LinkedList<>();
+    List<Cubic> mCubicsY = new LinkedList<>();
+    List<Integer> mPointsX = new LinkedList<>();
+    List<Integer> mPointsY = new LinkedList<>();
 
     int mLineCircleColor = 0xFFFFFFFF;
 
@@ -189,49 +199,28 @@ public class ShowDataView extends View {
 
             mPaint.setStyle(Paint.Style.STROKE);
             mLinePath.reset();
-            for (int i = 0; i < listSize; ++i) {
-                xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
-                yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
-                if (mUseConner) {
-                    if (i == 0) {
-                        mLinePath.moveTo(xx, yy);
-                    } else {
-                        minx = x > xx ? xx : x;
-                        miny = y > yy ? yy : y;
-                        angle = (float) Math.atan(x / y);
-                        if (yy > y) {
-                            x = (int) (Math.abs(x - xx) / 2);
-                            y = (int) (Math.abs(y - yy) / 2);
-                            if (x < y) {
-                                mLinePath.quadTo(minx + x, miny + y - y * angle / RIGHT_ANGLE + 10, minx + x, miny + y);
-                                mLinePath.quadTo(minx + x, miny + y + y * angle / RIGHT_ANGLE + 10, xx, yy);
-                            } else {
-                                mLinePath.quadTo(minx + x - x * angle / RIGHT_ANGLE + 10, miny + y, minx + x, miny + y);
-                                mLinePath.quadTo(minx + x + x * angle / RIGHT_ANGLE + 10, miny + y, xx, yy);
-                            }
-                        } else {
-                            x = (int) (Math.abs(x - xx) / 2);
-                            y = (int) (Math.abs(y - yy) / 2);
-                            if (x < y) {
-                                mLinePath.quadTo(minx + x, miny + y + y * angle / RIGHT_ANGLE + 10, minx + x, miny + y);
-                                mLinePath.quadTo(minx + x, miny + y - y * angle / RIGHT_ANGLE + 10, xx, yy);
-                            } else {
-                                mLinePath.quadTo(minx + x - x * angle / RIGHT_ANGLE + 10, miny + y, minx + x, miny + y);
-                                mLinePath.quadTo(minx + x + x * angle / RIGHT_ANGLE + 10, miny + y, xx, yy);
-                            }
-                        }
-                    }
-                } else {
+            mPointsX.clear();
+            mPointsY.clear();
+            if(mUseConner) {
+                for (int i = 0; i < listSize; ++i) {
+                    xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
+                    yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
+                    mPointsX.add((int) xx);
+                    mPointsY.add((int) yy);
+                }
+                drawCurve(canvas, mPointsX, mPointsY, mLinePath, mPaint);
+            } else {
+                for (int i = 0; i < listSize; ++i) {
+                    xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
+                    yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
                     if (i == 0) {
                         mLinePath.moveTo(xx, yy);
                     } else {
                         mLinePath.lineTo(xx, yy);
                     }
                 }
-                x = xx;
-                y = yy;
+                canvas.drawPath(mLinePath, mPaint);
             }
-            canvas.drawPath(mLinePath, mPaint);
             mPaint.setStyle(Paint.Style.FILL);
 
 
@@ -250,7 +239,7 @@ public class ShowDataView extends View {
                 yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
                 canvas.drawCircle(xx, yy, 8, mPaint);
                 if (x != 0) {
-                    canvas.drawLine(x, y, xx, yy, mPaint);
+//                    canvas.drawLine(x, y, xx, yy, mPaint);
                 }
                 x = xx;
                 y = yy;
@@ -259,6 +248,32 @@ public class ShowDataView extends View {
                     canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
                 }
             }
+
+            mPaint.setStyle(Paint.Style.STROKE);
+            mLinePath.reset();
+            mPointsX.clear();
+            mPointsY.clear();
+            if(mUseConner) {
+                for (int i = 0; i < listSize; ++i) {
+                    xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
+                    yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
+                    mPointsX.add((int) xx);
+                    mPointsY.add((int) yy);
+                }
+                drawCurve(canvas, mPointsX, mPointsY, mLinePath, mPaint);
+            } else {
+                for (int i = 0; i < listSize; ++i) {
+                    xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
+                    yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
+                    if (i == 0) {
+                        mLinePath.moveTo(xx, yy);
+                    } else {
+                        mLinePath.lineTo(xx, yy);
+                    }
+                }
+                canvas.drawPath(mLinePath, mPaint);
+            }
+            mPaint.setStyle(Paint.Style.FILL);
 
             mPaint.setColor(mLineCircleColor);
             for (int i = 0; i < listSize; ++i) {
@@ -400,5 +415,84 @@ public class ShowDataView extends View {
                 break;
         }
         return true;
+    }
+
+    private void drawCurve(Canvas canvas, List<Integer>points_x, List<Integer>points_y, Path curvePath, Paint paint) {
+
+        List<Cubic> calculate_x = calculate(points_x, mCubicsX);
+        List<Cubic> calculate_y = calculate(points_y, mCubicsY);
+        curvePath
+                .moveTo(calculate_x.get(0).eval(0), calculate_y.get(0).eval(0));
+
+        for (int i = 0; i < calculate_x.size(); i++) {
+            for (int j = 1; j <= STEPS; j++) {
+                float u = j / (float) STEPS;
+                curvePath.lineTo(calculate_x.get(i).eval(u), calculate_y.get(i)
+                        .eval(u));
+            }
+        }
+        canvas.drawPath(curvePath, paint);
+    }
+
+    private List<Cubic> calculate(List<Integer> x, List<Cubic> cubics) {
+        cubics.clear();
+        int n = x.size() - 1;
+        float[] gamma = new float[n + 1];
+        float[] delta = new float[n + 1];
+        float[] D = new float[n + 1];
+        int i;
+
+		/*
+		 * We solve the equation [2 1 ] [D[0]] [3(x[1] - x[0]) ] |1 4 1 | |D[1]|
+		 * |3(x[2] - x[0]) | | 1 4 1 | | . | = | . | | ..... | | . | | . | | 1 4
+		 * 1| | . | |3(x[n] - x[n-2])| [ 1 2] [D[n]] [3(x[n] - x[n-1])]
+		 *
+		 * by using row operations to convert the matrix to upper triangular and
+		 * then back sustitution. The D[i] are the derivatives at the knots.
+		 */
+
+        gamma[0] = 1.0f / 2.0f;
+        for (i = 1; i < n; i++) {
+            gamma[i] = 1 / (4 - gamma[i - 1]);
+        }
+        gamma[n] = 1 / (2 - gamma[n - 1]);
+
+        delta[0] = 3 * (x.get(1) - x.get(0)) * gamma[0];
+        for (i = 1; i < n; i++) {
+            delta[i] = (3 * (x.get(i + 1) - x.get(i - 1)) - delta[i - 1])
+                    * gamma[i];
+        }
+        delta[n] = (3 * (x.get(n) - x.get(n - 1)) - delta[n - 1]) * gamma[n];
+
+        D[n] = delta[n];
+        for (i = n - 1; i >= 0; i--) {
+            D[i] = delta[i] - gamma[i] * D[i + 1];
+        }
+
+        for (i = 0; i < n; i++) {
+            Cubic c = new Cubic(x.get(i), D[i], 3 * (x.get(i + 1) - x.get(i))
+                    - 2 * D[i] - D[i + 1], 2 * (x.get(i) - x.get(i + 1)) + D[i]
+                    + D[i + 1]);
+            cubics.add(c);
+        }
+        return cubics;
+    }
+
+    public static class Cubic {
+
+        float a,b,c,d;         // a + b*u + c*u^2 +d*u^3
+
+        public Cubic(float a, float b, float c, float d){
+            this.a = a;
+            this.b = b;
+            this.c = c;
+            this.d = d;
+        }
+
+
+        //evaluate cubic
+        public float eval(float u) {
+            return (((d*u) + c)*u + b)*u + a;
+        }
     }
 }
