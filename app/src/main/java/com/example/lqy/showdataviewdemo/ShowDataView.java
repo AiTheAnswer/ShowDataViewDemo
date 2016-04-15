@@ -21,10 +21,11 @@ import java.util.List;
  */
 public class ShowDataView extends View {
 
-    public static final float RIGHT_ANGLE = 90f * 3.1415f / 180f;
-    /**
-     * 重要参数，两点之间分为几段描画，数字愈大分段越多，描画的曲线就越精细.
-     */
+    // this means user can see 10 datas in screen
+    public static final int DATA_IN_SCREEN_NUMBER = 10;
+    // + 4 which means we draw 14 datas and we show the 3 - 11 in screen, that make move nice in screen edge
+    public static final int LIST_SIZE = DATA_IN_SCREEN_NUMBER + 4;
+    // this use for make curve, the bigger, the smoother
     private static final int STEPS = 12;
 
     private final List<Float> mMileList = new ArrayList<>();
@@ -90,7 +91,11 @@ public class ShowDataView extends View {
 
     float mLength;
 
-    boolean mLess12 = false;
+    boolean mLess14 = false;
+    int mDataSize;
+
+    float mTextSize = 20f;
+    float mLinesWidth = 3f;
 
     DecimalFormat mDf = new DecimalFormat("0.00");
 
@@ -112,20 +117,37 @@ public class ShowDataView extends View {
 
     // set or update data must use this
     public void setDataLists(ArrayList<Float> mile,ArrayList<Float> heart,ArrayList<Float> speed,ArrayList<Integer> time,ArrayList<String> date){
+        if(mile == null || heart == null || speed == null || time == null || date == null){
+            return;
+        }
+
+        clearAll();
         mMileList.addAll(mile);
         mHeartList.addAll(heart);
         mSpeedList.addAll(speed);
         mTimeList.addAll(time);
         mDateList.addAll(date);
 
-        for(int i=0; i< 2 ;++i){
-            mMileList.add(0, 0f);
-            mHeartList.add(0,0f);
-            mSpeedList.add(0,0f);
-            mTimeList.add(0, 0);
-            mDateList.add(0, "");
+        if(mMileList.size() > LIST_SIZE) {
+            //add two data for show, these two user never see
+            for (int i = 0; i < 2; ++i) {
+                mMileList.add(0, 0f);
+                mHeartList.add(0, 0f);
+                mSpeedList.add(0, 0f);
+                mTimeList.add(0, 0);
+                mDateList.add(0, "");
+            }
         }
+        postInvalidate();
+    }
 
+    public void setTextSize(float textSize){
+        mTextSize = textSize;
+        postInvalidate();
+    }
+
+    public void setLinesWidth(float width){
+        mLinesWidth = width;
         postInvalidate();
     }
 
@@ -134,9 +156,22 @@ public class ShowDataView extends View {
         long time = System.currentTimeMillis();
         super.onDraw(canvas);
 
-        mPaint.setTextSize(20f);
+        mDataSize = mMileList.size();
+        if (mDataSize < LIST_SIZE + 1) {
+            mLess14 = true;
+            mSpaceLength = (mWidth - mDataLength * mDataSize) / (mDataSize + 1);
+            Log.i("LQY", "mSpaceLength1->" + mSpaceLength);
+            mLength = 0;
+            mLeftPosition = 0;
+        } else {
+            mLess14 = false;
+            mDataSize = LIST_SIZE;
+            mMaxLeftPosition = mMileList.size() - mDataSize;
+        }
+
+        mPaint.setTextSize(mTextSize);
         mPaint.setTextAlign(Paint.Align.CENTER);
-        mPaint.setStrokeWidth(3f);
+        mPaint.setStrokeWidth(mLinesWidth);
 
         //draw background
         mPaint.setColor(mBackColor);
@@ -146,21 +181,21 @@ public class ShowDataView extends View {
         canvas.drawRect(0, mAreaHeight * 2 + mSpaceHeight, mWidth, mHeight, mPaint);
 
         if (mMileList == null || mMileList.size() == 0) {
-            // TODO: 16/2/18 no data
+            // TODO: 16/2/18 paint something when there's no data
         } else {
-            int listSize = mMileList.size();
-            if (mMileList.size() < 13) {
-                mLess12 = true;
-                mSpaceLength = (mWidth - mDataLength * listSize) / (listSize + 1);
-                mLength = 0;
-                mLeftPosition = 0;
-            } else {
-                mLess12 = false;
-                listSize = 12;
-                mMaxLeftPosition = mMileList.size() - listSize;
-            }
+//            int listSize = mMileList.size();
+//            if (mMileList.size() < LIST_SIZE + 1) {
+//                mLess14 = true;
+//                mSpaceLength = (mWidth - mDataLength * listSize) / (listSize + 1);
+//                mLength = 0;
+//                mLeftPosition = 0;
+//            } else {
+//                mLess14 = false;
+//                listSize = LIST_SIZE;
+//                mMaxLeftPosition = mMileList.size() - listSize;
+//            }
             mPaint.setColor(mBarBackColor);
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawRect(mLength + mSpaceLength + i * (mSpaceLength + mDataLength), 0, mLength + (i + 1) * (mSpaceLength + mDataLength), mAreaHeight, mPaint);
                 canvas.drawRect(mLength + mSpaceLength + i * (mSpaceLength + mDataLength), mAreaHeight + mSpaceHeight, mLength + (i + 1) * (mSpaceLength + mDataLength), mAreaHeight * 2 + mSpaceHeight, mPaint);
             }
@@ -168,13 +203,10 @@ public class ShowDataView extends View {
             //draw line
             mPaint.setColor(mSpeedColor);
             float maxSpeed = 0;
-            float x = 0;
-            float y = 0;
-            float xx = 0;
-            float yy = 0;
-            float minx = 0;
-            float miny = 0;
-            float angle = 0;
+//            float x = 0;
+//            float y = 0;
+            float xx;
+            float yy;
             int size = mSpeedList.size();
             for (int i = 0; i < size; ++i) {
                 if (maxSpeed < mSpeedList.get(i)) {
@@ -182,17 +214,12 @@ public class ShowDataView extends View {
                 }
             }
 
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                 yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
                 canvas.drawCircle(xx, yy, 8, mPaint);
-                if (x != 0) {
-//                    canvas.drawLine(x, y, xx, yy, mPaint);
-                }
-                x = xx;
-                y = yy;
                 canvas.drawText(mDf.format(mSpeedList.get(mLeftPosition + i)), xx, yy - mAreaHeight / 48 * 3, mPaint);
-                if (i == listSize - 1) {
+                if (i == mDataSize - 1) {
                     canvas.drawText("速度(m/s)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
                 }
             }
@@ -202,7 +229,7 @@ public class ShowDataView extends View {
             mPointsX.clear();
             mPointsY.clear();
             if(mUseConner) {
-                for (int i = 0; i < listSize; ++i) {
+                for (int i = 0; i < mDataSize; ++i) {
                     xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                     yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
                     mPointsX.add((int) xx);
@@ -210,7 +237,7 @@ public class ShowDataView extends View {
                 }
                 drawCurve(canvas, mPointsX, mPointsY, mLinePath, mPaint);
             } else {
-                for (int i = 0; i < listSize; ++i) {
+                for (int i = 0; i < mDataSize; ++i) {
                     xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                     yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
                     if (i == 0) {
@@ -223,9 +250,6 @@ public class ShowDataView extends View {
             }
             mPaint.setStyle(Paint.Style.FILL);
 
-
-            x = 0;
-            y = 0;
             mPaint.setColor(mHeartColor);
             float maxHeart = 0;
             size = mHeartList.size();
@@ -234,17 +258,12 @@ public class ShowDataView extends View {
                     maxHeart = mHeartList.get(i);
                 }
             }
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                 yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
                 canvas.drawCircle(xx, yy, 8, mPaint);
-                if (x != 0) {
-//                    canvas.drawLine(x, y, xx, yy, mPaint);
-                }
-                x = xx;
-                y = yy;
                 canvas.drawText(mHeartList.get(mLeftPosition + i) + "", xx, yy - mAreaHeight / 48 * 3, mPaint);
-                if (i == listSize - 1) {
+                if (i == mDataSize - 1) {
                     canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
                 }
             }
@@ -254,7 +273,7 @@ public class ShowDataView extends View {
             mPointsX.clear();
             mPointsY.clear();
             if(mUseConner) {
-                for (int i = 0; i < listSize; ++i) {
+                for (int i = 0; i < mDataSize; ++i) {
                     xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                     yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
                     mPointsX.add((int) xx);
@@ -262,7 +281,7 @@ public class ShowDataView extends View {
                 }
                 drawCurve(canvas, mPointsX, mPointsY, mLinePath, mPaint);
             } else {
-                for (int i = 0; i < listSize; ++i) {
+                for (int i = 0; i < mDataSize; ++i) {
                     xx = mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2;
                     yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
                     if (i == 0) {
@@ -276,7 +295,7 @@ public class ShowDataView extends View {
             mPaint.setStyle(Paint.Style.FILL);
 
             mPaint.setColor(mLineCircleColor);
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawCircle(mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5, 5, mPaint);
                 canvas.drawCircle(mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5, 5, mPaint);
             }
@@ -289,20 +308,20 @@ public class ShowDataView extends View {
                     maxMile = mMileList.get(i);
                 }
             }
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawRect(mLength + mSpaceLength + i * (mSpaceLength + mDataLength), mAreaHeight / 6 * 7 + mSpaceHeight + (1 - mMileList.get(mLeftPosition + i) / maxMile) * mAreaHeight / 6 * 5, mLength + (i + 1) * (mSpaceLength + mDataLength), mAreaHeight * 2 + mSpaceHeight, mPaint);
             }
             mPaint.setColor(mMileTextColor);
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawText(mDf.format(mMileList.get(mLeftPosition + i)) + " km", mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 * 7 + mSpaceHeight + (1 - mMileList.get(mLeftPosition + i) / maxMile) * mAreaHeight / 6 * 5 - mAreaHeight / 24, mPaint);
             }
             //draw text
             mPaint.setColor(mTimeColor);
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawText(mTimeList.get(mLeftPosition + i) + " min", mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight * 2 + mSpaceHeight + mTextHeight * 0.4f, mPaint);
             }
             mPaint.setColor(mDateColor);
-            for (int i = 0; i < listSize; ++i) {
+            for (int i = 0; i < mDataSize; ++i) {
                 canvas.drawText(mDateList.get(mLeftPosition + i), mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight * 2 + mSpaceHeight + mTextHeight * 0.8f, mPaint);
             }
 
@@ -316,15 +335,16 @@ public class ShowDataView extends View {
         mHeight = MeasureSpec.getSize(heightMeasureSpec);
         mScreenWidth = MeasureSpec.getSize(widthMeasureSpec);
 
-        mDataLength = mScreenWidth * 0.55f / 10;
-        mSpaceLength = mScreenWidth * 0.45f / 10;
+        mDataLength = mScreenWidth * 0.55f / DATA_IN_SCREEN_NUMBER;
+        mSpaceLength = mScreenWidth * 0.45f / DATA_IN_SCREEN_NUMBER;
         mSpaceHeight = mHeight / 30;
         mTextHeight = mHeight / 9;
         mAreaHeight = (mHeight - mSpaceHeight - mTextHeight) / 2;
-        mWidth = (mDataLength + mSpaceLength) * 12;
+        mWidth = (mDataLength + mSpaceLength) * LIST_SIZE;
         mLength = 0;
         mScreenPosition = (mDataLength + mSpaceLength) * 2;
         setMeasuredDimension((int) mWidth, (int) mHeight);
+//        Log.i("LQY", "mSpaceLength3->" + mSpaceLength);
     }
 
     @Override
@@ -346,7 +366,8 @@ public class ShowDataView extends View {
                 if (mX == 0) {
                     mX = event.getX();
                 }
-                if (mLess12) {
+                if (mLess14) {
+                    // move right
                     if (mX - event.getX() < 0) {
                         distance = (int) Math.abs(event.getX() - mX);
                         mScreenPosition -= distance;
@@ -354,11 +375,14 @@ public class ShowDataView extends View {
                             mScreenPosition = 0;
                         }
                         this.scrollTo((int) mScreenPosition, 0);
-                    } else if (mX - event.getX() > 0) {
+                    }
+                    // move left
+                    else if (mX - event.getX() > 0)
+                    {
                         distance = (int) Math.abs(event.getX() - mX);
                         mScreenPosition += distance;
-                        if (mScreenPosition > (mDataLength + mSpaceLength) * 2) {
-                            mScreenPosition = (mDataLength + mSpaceLength) * 2;
+                        if (mScreenPosition > mWidth - mScreenWidth) {
+                            mScreenPosition = mWidth - mScreenWidth;
                         }
                         this.scrollTo((int) mScreenPosition, 0);
                     }
@@ -368,17 +392,24 @@ public class ShowDataView extends View {
                         distance = (int) Math.abs(event.getX() - mX);
                         if (mLeftPosition != 0) {
                             mLength += distance;
-                        }
-                        if (mLength > mSpaceLength + mDataLength) {
-                            if (mLeftPosition != 0) {
-                                mLength = mSpaceLength + mDataLength - mLength;
-                            } else {
-                                mLength = mSpaceLength + mDataLength;
+
+                            if (mLength > mSpaceLength + mDataLength) {
+                                if (mLeftPosition != 0) {
+                                    mLength = mSpaceLength + mDataLength - mLength;
+                                } else {
+                                    mLength = mSpaceLength + mDataLength;
+                                }
+                                if (mLeftPosition > 0) {
+                                    --mLeftPosition;
+                                }
                             }
-                            if (mLeftPosition > 0) {
-                                --mLeftPosition;
+                        } else {
+                            mLength += distance;
+                            if (mLength > 0) {
+                                mLength = 0;
                             }
                         }
+
                         this.postInvalidate();
                     }
                     // move left
@@ -399,8 +430,8 @@ public class ShowDataView extends View {
                             }
                         } else {
                             mLength -= distance;
-                            if (mLength < -(mSpaceLength + mDataLength) * 2) {
-                                mLength = -(mSpaceLength + mDataLength) * 2;
+                            if (mLength < -(mSpaceLength + mDataLength) * 2 - mSpaceLength) {
+                                mLength = -(mSpaceLength + mDataLength) * 2 - mSpaceLength;
                             }
                         }
                         this.postInvalidate();
@@ -478,21 +509,11 @@ public class ShowDataView extends View {
         return cubics;
     }
 
-    public static class Cubic {
-
-        float a,b,c,d;         // a + b*u + c*u^2 +d*u^3
-
-        public Cubic(float a, float b, float c, float d){
-            this.a = a;
-            this.b = b;
-            this.c = c;
-            this.d = d;
-        }
-
-
-        //evaluate cubic
-        public float eval(float u) {
-            return (((d*u) + c)*u + b)*u + a;
-        }
+    private void clearAll(){
+        mMileList.clear();
+        mHeartList.clear();
+        mSpeedList.clear();
+        mTimeList.clear();
+        mDateList.clear();
     }
 }
