@@ -223,7 +223,7 @@ public class ShowDataView extends View {
 //                    canvas.drawText("速度(m/s)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
 //                }
             }
-            canvas.drawText("速度(m/s)",  (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 40, mPaint);
+            canvas.drawText("item1",  (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 40, mPaint);
 
             mPaint.setStyle(Paint.Style.STROKE);
             mLinePath.reset();
@@ -268,7 +268,7 @@ public class ShowDataView extends View {
 //                    canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
 //                }
             }
-            canvas.drawText("心率(t/min)", (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 80, mPaint);
+            canvas.drawText("item2", (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 80, mPaint);
 
             mPaint.setStyle(Paint.Style.STROKE);
             mLinePath.reset();
@@ -397,11 +397,7 @@ public class ShowDataView extends View {
                             mLength += distance;
 
                             if (mLength > mSpaceLength + mDataLength) {
-                                if (mLeftPosition != 0) {
-                                    mLength = mSpaceLength + mDataLength - mLength;
-                                } else {
-                                    mLength = mSpaceLength + mDataLength;
-                                }
+                                mLength = 0;
                                 if (mLeftPosition > 0) {
                                     --mLeftPosition;
                                 }
@@ -422,11 +418,7 @@ public class ShowDataView extends View {
                             mLength -= distance;
 
                             if (mLength < -mDataLength - mSpaceLength) {
-                                if (mLeftPosition != mMaxLeftPosition) {
-                                    mLength = -mDataLength - mSpaceLength - mLength;
-                                } else {
-                                    mLength = -(mSpaceLength + mDataLength) * 3;
-                                }
+                                mLength = 0;
                                 if (mLeftPosition < mMaxLeftPosition) {
                                     ++mLeftPosition;
                                 }
