@@ -219,10 +219,11 @@ public class ShowDataView extends View {
                 yy = mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5;
                 canvas.drawCircle(xx, yy, 8, mPaint);
                 canvas.drawText(mDf.format(mSpeedList.get(mLeftPosition + i)), xx, yy - mAreaHeight / 48 * 3, mPaint);
-                if (i == mDataSize - 1) {
-                    canvas.drawText("速度(m/s)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
-                }
+//                if (i == mDataSize - 1) {
+//                    canvas.drawText("速度(m/s)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
+//                }
             }
+            canvas.drawText("速度(m/s)",  (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 40, mPaint);
 
             mPaint.setStyle(Paint.Style.STROKE);
             mLinePath.reset();
@@ -263,10 +264,11 @@ public class ShowDataView extends View {
                 yy = mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5;
                 canvas.drawCircle(xx, yy, 8, mPaint);
                 canvas.drawText(mHeartList.get(mLeftPosition + i) + "", xx, yy - mAreaHeight / 48 * 3, mPaint);
-                if (i == mDataSize - 1) {
-                    canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
-                }
+//                if (i == mDataSize - 1) {
+//                    canvas.drawText("心率(t/min)", xx + mDataLength, yy + mAreaHeight / 24, mPaint);
+//                }
             }
+            canvas.drawText("心率(t/min)", (mWidth - mScreenWidth) / 2 + mSpaceLength + 10, 80, mPaint);
 
             mPaint.setStyle(Paint.Style.STROKE);
             mLinePath.reset();
@@ -299,6 +301,7 @@ public class ShowDataView extends View {
                 canvas.drawCircle(mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 + (1 - mHeartList.get(mLeftPosition + i) / maxHeart) * mAreaHeight / 6 * 5, 5, mPaint);
                 canvas.drawCircle(mLength + mSpaceLength + i * (mSpaceLength + mDataLength) + mDataLength / 2, mAreaHeight / 6 + (1 - mSpeedList.get(mLeftPosition + i) / maxSpeed) * mAreaHeight / 6 * 5, 5, mPaint);
             }
+
             //draw bar
             mPaint.setColor(mMileColor);
             float maxMile = 0;
